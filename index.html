@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Aventura de Halloween: Rescata el Globo</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #090d16;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .pantalla {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #090d16;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .oculto { display: none !important; }
+        
+        /* CINEMÁTICA */
+        #pantalla-cinematica {
+            background: radial-gradient(circle, #1e1b4b 0%, #090d16 100%);
+            cursor: pointer;
+        }
+        .texto-cinematica {
+            font-size: 18px;
+            color: #cbd5e1;
+            max-width: 320px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            min-height: 80px;
+        }
+        .btn-cinematica {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-weight: bold;
+            font-size: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        /* JUEGO PRINCIPAL */
+        #contenedor-juego {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #0f172a 0%, #1e1b4b 50%, #020617 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        
+        .escenario-bosque {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            max-width: 500px;
+            background: radial-gradient(circle at 50% 20%, #3b0764 0%, #090d16 70%);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Elementos del mapa */
+        .luna-llena {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 45px;
+            filter: drop-shadow(0 0 12px rgba(255,255,255,0.6));
+        }
+        .globo-atrapado {
+            position: absolute;
+            top: 75px;
+            left: 52%;
+            font-size: 32px;
+            animation: flotarGlobo 2s ease-in-out infinite alternate;
+            cursor: pointer;
+        }
+        @keyframes flotarGlobo {
+            0% { transform: translateY(0) rotate(-3deg); }
+            100% { transform: translateY(-6px) rotate(3deg); }
+        }
+
+        .nina-pos {
+            position: absolute;
+            bottom: 25px;
+            left: 20px;
+            font-size: 42px;
+            cursor: pointer;
+        }
+
+        /* Burbuja de diálogo */
+        .burbuja-dialogo {
+            position: absolute;
+            bottom: 75px;
+            left: 20px;
+            background: white;
+            color: #0f172a;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            max-width: 180px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-align: left;
+            z-index: 10;
+        }
+        .burbuja-dialogo::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 15px;
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: white transparent;
+            display: block;
+            width: 0;
+        }
+
+        /* Objetos interactivos en el mapa */
+        .objeto-mapa {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .objeto-mapa:active { transform: scale(0.9); }
+
+        #hojas-secas { bottom: 35px; right: 25px; font-size: 40px; }
+        #tumba-lapida { bottom: 30px; right: 110px; font-size: 48px; }
+        #casita-escalera { bottom: 30px; left: 130px; font-size: 45px; }
+
+        /* Panel de 7 casillas inferiores */
+        .panel-inferior {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 3px solid #334155;
+            padding: 10px 5px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            box-sizing: border-box;
+            z-index: 20;
+        }
+        .casilla {
+            width: 42px;
+            height: 42px;
+            background: #1e293b;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            position: relative;
+        }
+        .casilla.seleccionada {
+            border-color: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+            background: #334155;
+        }
+
+        /* Pantalla de Victoria */
+        #pantalla-victoria {
+            background: radial-gradient(circle, #064e3b 0%, #022c22 100%);
+        }
+        .codigo-recompensa {
+            background: #022c22;
+            border: 2px dashed #10b981;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 20px;
+            color: #34d399;
+            letter-spacing: 2px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CINEMÁTICA INICIAL -->
+    <div id="pantalla-cinematica" class="pantalla" onclick="avancarCinematica()">
+        <div style="font-size: 60px; margin-bottom: 20px;" id="icono-cinematica">👧🎈</div>
+        <div class="texto-cinematica" id="texto-cinematica">Había una vez una dulce niña que jugaba feliz con su brillante globo rojo en el parque...</div>
+        <button class="btn-cinematica" id="btn-cinematica-sig" onclick="event.stopPropagation(); avancarCinematica();">Continuar ▶</button>
+    </div>
+
+    <!-- JUEGO INTERACTIVO (PUZZLE DE HALLOWEEN) -->
+    <div id="contenedor-juego" class="oculto">
+        <div class="escenario-bosque" id="escenario">
+            <div class="luna-llena">🌕</div>
+            <!-- Árbol con globo -->
+            <div class="objeto-mapa" id="arbol-globo" style="top: 20px; left: 45%; font-size: 80px;" onclick="interactuarArbol()">🌳</div>
+            <div class="globo-atrapado" id="globo" onclick="interactuarArbol()">🎈</div>
+
+            <!-- Tumba y lápidas con destornillador incrustado -->
+            <div class="objeto-mapa" id="tumba-lapida" onclick="interactuarLapida()">🪦<span style="position: absolute; top: 10px; left: 12px; font-size: 16px;" id="icono-destornillador-incrustado">🪛</span></div>
+
+            <!-- Hojas secas donde está escondida la pala -->
+            <div class="objeto-mapa" id="hojas-secas" onclick="interactuarHojas()">🍂</div>
+
+            <!-- Casita con escalera asegurada -->
+            <div class="objeto-mapa" id="casita-escalera" onclick="interactuarCasita()">🏚️</div>
+
+            <!-- Niña y Burbuja de diálogo -->
+            <div class="nina-pos" onclick="mostrarPista()">👧</div>
+            <div class="burbuja-dialogo" id="burbuja">¡Oh no! Mi globo se quedó atrapado en el árbol del bosque oscuro... ¡Ayúdame a buscarlo!</div>
+        </div>
+
+        <!-- 7 Casillas del inventario inferior -->
+        <div class="panel-inferior" id="panel-inventario">
+            <div class="casilla" onclick="seleccionarCasilla(0)" id="slot-0"></div>
+            <div class="casilla" onclick="seleccionarCasilla(1)" id="slot-1"></div>
+            <div class="casilla" onclick="seleccionarCasilla(2)" id="slot-2"></div>
+            <div class="casilla" onclick="seleccionarCasilla(3)" id="slot-3"></div>
+            <div class="casilla" onclick="seleccionarCasilla(4)" id="slot-4"></div>
+            <div class="casilla" onclick="seleccionarCasilla(5)" id="slot-5"></div>
+            <div class="casilla" onclick="seleccionarCasilla(6)" id="slot-6"></div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE VICTORIA -->
+    <div id="pantalla-victoria" class="pantalla oculto">
+        <div style="background: rgba(6, 78, 59, 0.9); border: 3px solid #059669; border-radius: 20px; padding: 25px; max-width: 320px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h1 style="color: #34d399; font-size: 22px; margin-top: 0;">🎉 ¡Ganaste!</h1>
+            <p style="color: #e2e8f0; font-size: 13px; margin-bottom: 10px;">Ahora toma tu premio y reclamalo mañana:</p>
+            <div style="font-size: 18px; font-weight: bold; color: #f59e0b; margin: 10px 0;">🎁 Huevo Jubilado</div>
+            <div class="codigo-recompensa" id="texto-codigo">10bt-X992</div>
+            <p style="color: #94a3b8; font-size: 11px;">Guarda este código generado exclusivamente para ti.</p>
+            <button class="btn-cinematica" style="margin-top: 15px; width: 100%;" onclick="location.reload()">Jugar de Nuevo</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CINEMÁTICA ---
+        let pasoCinematica = 0;
+        const textosCinematica = [
+            "Había una vez una dulce niña que jugaba feliz con su brillante globo rojo en el parque...",
+            "De repente, una fuerte ráfaga de viento sopló en la noche de Halloween...",
+            "¡El globo se voló muy alto y se quedó atrapado en lo más alto de un árbol tenebroso!",
+            "Ahora se encuentran en un bosque oscuro y terrorífico. ¡Ayuda a la niña a rescatar su globo!"
+        ];
+
+        function avancarCinematica() {
+            pasoCinematica++;
+            if (pasoCinematica < textosCinematica.length) {
+                document.getElementById('texto-cinematica').innerText = textosCinematica[pasoCinematica];
+                if(pasoCinematica === 2) {
+                    document.getElementById('icono-cinematica').innerText = "💨🎈";
+                } else if(pasoCinematica === 3) {
+                    document.getElementById('icono-cinematica').innerText = "🌲👧🌲";
+                    document.getElementById('btn-cinematica-sig').innerText = "Comenzar Aventura 🚀";
+                }
+            } else {
+                document.getElementById('pantalla-cinematica').classList.add('oculto');
+                document.getElementById('contenedor-juego').classList.remove('oculto');
+            }
+        }
+
+        // --- ESTADOS DEL JUEGO ---
+        let inventario = [null, null, null, null, null, null, null];
+        let indiceSeleccionado = null;
+        let tapsHojas = 0;
+        let tapsEscalera = 0;
+        let martilloUsadoEnTumba = false;
+        let destornilladorObtenido = false;
+        let escaleraObtenida = false;
+
+        const pistas = [
+            "¡Busca bien entre las hojas secas del suelo!",
+            "Usa la pala para cavar cerca de la tumba y encontrar un martillo.",
+            "Usa el martillo para golpear la lápida y romperla.",
+            "Arrastra el destornillador hacia la escalera asegurada de la casita.",
+            "Lleva la escalera hasta el árbol para alcanzar tu globo."
+        ];
+        let indicePista = 0;
+
+        function hablar(texto) {
+            document.getElementById('burbuja').innerText = texto;
+        }
+
+        function mostrarPista() {
+            hablar(pistas[indicePista]);
+        }
+
+        // --- GESTIÓN DE INVENTARIO ---
+        function agregarItem(item) {
+            for(let i=0; i<inventario.length; i++) {
+                if(inventario[i] === null) {
+                    inventario[i] = item;
+                    actualizarInventarioUI();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function removerItem(itemEmoji) {
+            for(let i=0; i<inventario.length; i++) {
+                if(inventario[i] === itemEmoji) {
+                    inventario[i] = null;
+                    if(indiceSeleccionado === i) indiceSeleccionado = null;
+                    actualizarInventarioUI();
+                    break;
+                }
+            }
+        }
+
+        function actualizarInventarioUI() {
+            for(let i=0; i<7; i++) {
+                let slot = document.getElementById(`slot-${i}`);
+                slot.innerText = inventario[i] || "";
+                if(i === indiceSeleccionado) {
+                    slot.classList.add('seleccionada');
+                } else {
+                    slot.classList.remove('seleccionada');
+                }
+            }
+        }
+
+        function seleccionarCasilla(index) {
+            if(inventario[index]) {
+                indiceSeleccionado = index;
+                actualizarInventarioUI();
+            } else {
+                indiceSeleccionado = null;
+                actualizarInventarioUI();
+            }
+        }
+
+        // --- INTERACCIONES DEL MAPA ---
+        function interactuarHojas() {
+            tapsHojas++;
+            if(tapsHojas === 1) {
+                hablar("¡Ey! Me pareció ver algo brillante moviéndose entre las hojas secas...");
+            } else if(tapsHojas === 2) {
+                hablar("¡Sigue tocando, falta poco para descubrir qué hay oculto!");
+            } else if(tapsHojas === 3) {
+                hablar("¡Encontré una pala! Ha sido añadida a tu inventario.");
+                agregarItem("⛏️");
+                document.getElementById('hojas-secas').style.opacity = "0.4";
+                indicePista = 1;
+            } else {
+                hablar("Las hojas ya están despejadas.");
+            }
+        }
+
+        function interactuarLapida() {
+            let itemSel = indiceSeleccionado !== null ? inventario[indiceSeleccionado] : null;
+
+            if(itemSel === "⛏️") {
+                if(!martilloUsadoEnTumba) {
+                    martilloUsadoEnTumba = true;
+                    hablar("¡Has cavado con la pala y desenterraste un martillo mágico! 🔨");
+                    removerItem("⛏️");
+                    agregarItem("🔨");
+                    indicePista = 2;
+                } else {
+                    hablar("Ya cavaste aquí y encontraste el martillo.");
+                }
+            } else if(itemSel === "🔨") {
+                if(!destornilladorObtenido) {
+                    destornilladorObtenido = true;
+                    hablar("¡Rompiste la lápida con el martillo! El martillo se rompió, pero el destornillador quedó en tu inventario 🪛.");
+                    removerItem("🔨");
+                    document.getElementById('icono-destornillador-incrustado').style.display = 'none';
+                    agregarItem("🪛");
+                    indicePista = 3;
+                } else {
+                    hablar("Ya conseguiste el destornillador de la tumba.");
+                }
+            } else {
+                hablar("Hay una lápida con un destornillador incrustado. Necesitas la herramienta correcta para excavar o romperla.");
+            }
+        }
+
+        function interactuarCasita() {
+            let itemSel = indiceSeleccionado !== null ? inventario[indiceSeleccionado] : null;
+
+            if(itemSel === "🪛") {
+                tapsEscalera++;
+                if(tapsEscalera < 4) {
+                    hablar(`Desatornillando la escalera asegurada... (${tapsEscalera}/4)`);
+                } else if(tapsEscalera === 4 && !escaleraObtenida) {
+                    escaleraObtenida = true;
+                    hablar("¡Excelente! Soltaste la escalera de la casita y ahora está en tu inventario 🪜.");
+                    removerItem("🪛");
+                    agregarItem("🪜");
+                    document.getElementById('casita-escalera').style.opacity = "0.4";
+                    indicePista = 4;
+                }
+            } else if(itemSel === "🔨") {
+                hablar("¡No ataques la casita con el martillo! Podrías lastimarte.");
+            } else if(itemSel === "⛏️") {
+                hablar("Ese no es el lugar para usar la pala.");
+            } else {
+                hablar("La escalera de esta casita está fuertemente asegurada. Necesitas desatornillarla.");
+            }
+        }
+
+        function interactuarArbol() {
+            let itemSel = indiceSeleccionado !== null ? inventario[indiceSeleccionado] : null;
+
+            if(itemSel === "🪜") {
+                hablar("¡Colocaste la escalera en el árbol y rescataste tu globo rojo! 🎉");
+                removerItem("🪜");
+                document.getElementById('globo').style.display = 'none';
+                
+                // Generar código aleatorio estilo 10bt-XXXX
+                let letrasAleatorias = Math.random().toString(36).substring(2, 6).toUpperCase();
+                document.getElementById('texto-codigo').innerText = `10bt-${letrasAleatorias}`;
+
+                setTimeout(() => {
+                    document.getElementById('contenedor-juego').classList.add('oculto');
+                    document.getElementById('pantalla-victoria').classList.remove('oculto');
+                }, 1500);
+            } else if(itemSel === "🪛" || itemSel === "🔨" || itemSel === "⛏️") {
+                hablar("¡Ese no es el lugar para usar esta herramienta!");
+            } else {
+                hablar("El globo está demasiado alto. ¡Necesito algo para subir y alcanzarlo!");
+            }
+        }
+    </script>
+</body>
+  </html>
+  
